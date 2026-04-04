@@ -42,7 +42,17 @@ Supabase は認証（Auth）とデータベース（PostgreSQL）の両方の役
    - **「+ ADD USERS」** をクリックし、**利用を許可するお二人の Gmail アドレスを正確に入力**して追加します。
    - **公開ステータスが「テスト中 (Testing)」である限り、ここに登録されたユーザー以外は Google ログインを試みてもブロックされます。**
 
-### C. 認証情報 (Credentials) の作成
+### C. RLS (Row Level Security) の設定
+1. Supabase ダッシュボードの左メニューから **「SQL Editor」** を選択します。
+2. **「New query」** を作成し、プロジェクト内の `supabase/migrations/0000_setup_rls.sql` の内容を貼り付けて **「Run」** をクリックします。
+3. 次に、API のスキーマキャッシュを強制リロードするため、以下の SQL を実行します：
+   ```sql
+   NOTIFY pgrst, 'reload schema';
+   ```
+   - ※これを行わないと、API からテーブルが正しく認識されず 406 エラー（Not Acceptable）が返ることがございます。
+
+## 3. 認証情報 (Credentials) の作成
+
 1. **「API とサービス」 > 「認証情報」** を選択。
 2. **「+ 認証情報を作成」 > 「OAuth クライアント ID」** を選択。
 3. **アプリケーションの種類** を **「ウェブ アプリケーション」** に設定。

@@ -30,11 +30,16 @@ export default function SettingsPage() {
         return
       }
 
+      // .maybeSingle() を使用することで、行がない場合に 406 エラーが出るのを防ぎますわ
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
+
+      if (error) {
+        console.error('Settings load error:', error)
+      }
 
       if (data) {
         setSettings({
@@ -53,15 +58,18 @@ export default function SettingsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    // 保存時、既存のデータがない場合は upsert として機能しますわ
     const { error } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        id: user.id,
+        email: user.email,
         is_google_sync_enabled: settings.is_google_sync_enabled,
         frica_shared_url: settings.frica_shared_url,
-      })
-      .eq('id', user.id)
+      }, { onConflict: 'id' })
 
     if (error) {
+      console.error('Save settings error:', error)
       toast.error('設定の保存に失敗しましたわ。')
     } else {
       toast.success('設定を保存いたしましたわ。')
