@@ -1,0 +1,17 @@
+name: Daily Calendar Sync
+
+on:
+  schedule:
+    # 日本時間 0:00 (JST) = 15:00 (UTC)
+    - cron: '0 15 * * *'
+  workflow_dispatch: # 手動実行も可能にします
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Sync API
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/sync" \
+          -H "Authorization: Bearer ${{ secrets.SYNC_SECRET_TOKEN }}" \
+          -H "Content-Type: application/json"
