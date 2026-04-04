@@ -24,12 +24,19 @@ export async function GET(request: Request) {
       }
 
       // 2. プロフィール情報の初期化 (Admin Client を使用して RLS をバイパス)
+      // Google の provider_refresh_token が取得できている場合は保存します
       const adminClient = await createAdminClient()
-      const { error: profileError } = await adminClient.from('profiles').upsert({
+      const profileData: any = {
         id: session.user.id,
         email: session.user.email,
         is_google_sync_enabled: true,
-      }, { onConflict: 'id' })
+      }
+
+      if (session.provider_refresh_token) {
+        profileData.google_refresh_token = session.provider_refresh_token
+      }
+
+      const { error: profileError } = await adminClient.from('profiles').upsert(profileData, { onConflict: 'id' })
 
       if (profileError) {
         console.error('Admin Profile initialization error:', profileError)

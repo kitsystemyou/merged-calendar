@@ -25,27 +25,45 @@ export async function syncAllUsers() {
     let allNewEvents: Omit<CalendarEvent, 'id' | 'created_at'>[] = []
 
     // 1. Googleカレンダー同期
-    if (profile.is_google_sync_enabled) {
-      console.log('Google sync logic here...')
-      // リフレッシュトークンを使用して fetchGoogleEvents を実行するロジックをここに
+    if (profile.is_google_sync_enabled && profile.google_refresh_token) {
+      try {
+        console.log('Google sync started...')
+        const googleEvents = await fetchGoogleEvents(profile.google_refresh_token, profile.id)
+        allNewEvents.push(...googleEvents)
+        console.log(`Fetched ${googleEvents.length} events from Google.`)
+      } catch (err) {
+        console.error(`Google sync failed for user ${profile.id}:`, err)
+      }
     }
 
     // 2. フリカレスクレイピング
     if (profile.frica_shared_url) {
-      console.log('Frica scraping started...')
-      const fricaEvents = await scrapeFricaEvents(profile.frica_shared_url, profile.id)
-      allNewEvents.push(...fricaEvents)
+      try {
+        console.log('Frica scraping started...')
+        const fricaEvents = await scrapeFricaEvents(profile.frica_shared_url, profile.id)
+        allNewEvents.push(...fricaEvents)
+        console.log(`Fetched ${fricaEvents.length} events from Frica.`)
+      } catch (err) {
+        console.error(`Frica scraping failed for user ${profile.id}:`, err)
+      }
     }
 
     // 3. データベースへの保存
     if (allNewEvents.length > 0) {
-      // 既存の予定を削除して入れ替え
+      // 既存の予定を削除して入れ替え (全ソース分を一度に更新)
       await supabase.from('events').delete().eq('user_id', profile.id)
       const { error: upsertError } = await supabase.from('events').insert(allNewEvents)
-      if (upsertError) console.error('Upsert failed:', upsertError)
+      if (upsertError) {
+        console.error('Upsert failed:', upsertError)
+      } else {
+        console.log(`Successfully synced ${allNewEvents.length} events total.`)
+      }
     }
     
-    // 更新日時をアップデート
-    await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('id', profile.id)
+    // 更新日時と最終同期日時をアップデート
+    await supabase.from('profiles').update({ 
+      updated_at: new Date().toISOString(),
+      last_sync_at: new Date().toISOString()
+    }).eq('id', profile.id)
   }
 }

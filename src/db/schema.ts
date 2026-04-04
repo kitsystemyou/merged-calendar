@@ -4,6 +4,8 @@ export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey().notNull(),
   email: text('email').notNull(),
   is_google_sync_enabled: boolean('is_google_sync_enabled').default(true).notNull(),
+  google_refresh_token: text("google_refresh_token"),
+  last_sync_at: timestamp("last_sync_at"),
   frica_shared_url: text('frica_shared_url'),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
 })

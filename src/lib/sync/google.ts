@@ -2,62 +2,53 @@ import { google } from 'googleapis'
 import { CalendarEvent } from '@/types/database.types'
 
 /**
- * Google Calendar APIから予定を取得します
+ * リフレッシュトークンを使用して Google カレンダーから予定を取得します
  */
-export async function fetchGoogleEvents(
-  accessToken: string,
-  refreshToken: string,
-  userId: string
-): Promise<Omit<CalendarEvent, 'id' | 'created_at'>[]> {
-  const auth = new google.auth.OAuth2(
+export async function fetchGoogleEvents(refreshToken: string, userId: string): Promise<Omit<CalendarEvent, 'id' | 'created_at'>[]> {
+  const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
+    process.env.GOOGLE_CLIENT_SECRET,
+    // リダイレクトURIは認証時には必要ですが、リフレッシュ時は不要ですわ
   )
 
-  auth.setCredentials({
-    access_token: accessToken,
-    refresh_token: refreshToken,
+  oauth2Client.setCredentials({
+    refresh_token: refreshToken
   })
 
-  const calendar = google.calendar({ version: 'v3', auth })
-  const now = new Date()
-  const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const oneYearLater = new Date(now.getFullYear(), now.getMonth() + 12, 1)
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
 
   try {
+    const now = new Date()
+    const oneMonthLater = new Date()
+    oneMonthLater.setMonth(now.getMonth() + 1)
+
     const response = await calendar.events.list({
       calendarId: 'primary',
-      timeMin: oneMonthAgo.toISOString(),
-      timeMax: oneYearLater.toISOString(),
+      timeMin: now.toISOString(),
+      timeMax: oneMonthLater.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
     })
 
     const items = response.data.items || []
-    const events: Omit<CalendarEvent, 'id' | 'created_at'>[] = []
 
-    for (const item of items) {
-      if (!item.summary) continue
-
+    return items.map((item) => {
       const start = item.start?.dateTime || item.start?.date
       const end = item.end?.dateTime || item.end?.date
+      const isAllDay = !!item.start?.date
 
-      if (!start) continue
-
-      events.push({
+      return {
         user_id: userId,
-        source: 'google',
-        title: item.summary,
-        start_at: new Date(start).toISOString(),
-        end_at: end ? new Date(end).toISOString() : null,
-        is_all_day: !!item.start?.date,
+        source: 'google' as const,
+        title: item.summary || '(No Title)',
+        start_at: new Date(start!),
+        end_at: end ? new Date(end) : null,
+        is_all_day: isAllDay,
         external_id: item.id || null,
-      })
-    }
-
-    return events
+      }
+    })
   } catch (error) {
-    console.error('Google Calendar fetching error:', error)
-    return []
+    console.error('Error fetching Google events:', error)
+    throw error
   }
 }
