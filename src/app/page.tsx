@@ -32,6 +32,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const fetchEvents = async () => {
     setLoading(true)
@@ -52,6 +53,7 @@ export default function CalendarPage() {
   }
 
   useEffect(() => {
+    setMounted(true)
     fetchEvents()
   }, [])
 
@@ -144,7 +146,11 @@ export default function CalendarPage() {
                   }`}
                 >
                   <div className={`text-right text-xs mb-1 font-medium ${
-                    !isCurrentMonth ? 'text-gray-300' : isSameDay(day, new Date()) ? 'text-blue-600 font-bold' : 'text-gray-700'
+                    !isCurrentMonth 
+                      ? 'text-gray-300' 
+                      : (mounted && isSameDay(day, new Date())) 
+                        ? 'text-blue-600 font-bold' 
+                        : 'text-gray-700'
                   }`}>
                     {format(day, 'd')}
                   </div>
