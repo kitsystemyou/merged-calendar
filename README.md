@@ -45,8 +45,46 @@ Vercel 画面から同期をキックするために必要です。
 
 ## 開発者向け (Local Setup)
 
-1. リポジトリをクローンします。
-2. `.env.local.example` を `.env.local` にコピーし、値を設定します。
-3. `npm install`
-4. `npx playwright install chromium` (フリカレ同期のローカル実行に必要です)
-5. `npm run dev` で起動します。
+本アプリケーションは、**Next.js (Frontend/API)** と **Worker (Sync Job)** の2つのプロセスで構成されています。ローカルで動作を確認するには、両方を起動する必要がありますわ。
+
+1. **リポジトリの準備**
+   ```bash
+   git clone <repository-url>
+   cd merged-calendar
+   npm install
+   ```
+
+2. **環境変数の設定**
+   `.env.local.example` を `.env.local` にコピーし、各項目を設定してください。
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   ※ローカル実行時は `WORKER_URL=http://localhost:3001/sync` を設定してください。
+
+3. **Playwrightのセットアップ**
+   スクレイピングに必要なブラウザをインストールします。
+   ```bash
+   npx playwright install chromium --with-deps
+   ```
+
+4. **データベースのマイグレーション**
+   ```bash
+   npm run db:push
+   ```
+
+5. **アプリケーションの起動**
+   2つのターミナルを開いて、それぞれ以下のコマンドを実行してください。
+
+   **ターミナル 1 (Next.js アプリケーション)**
+   ```bash
+   npm run dev
+   ```
+
+   **ターミナル 2 (非同期ジョブ・ワーカー)**
+   ```bash
+   npm run worker
+   ```
+
+6. **動作確認**
+   - [http://localhost:3000](http://localhost:3000) でカレンダー画面が開けます。
+   - 画面上の「同期」ボタンを押すと、`localhost:3000/api/sync` を経由して `localhost:3001/sync` (Worker) がバックグラウンドで処理を開始します。

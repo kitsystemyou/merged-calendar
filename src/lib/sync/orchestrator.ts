@@ -24,6 +24,7 @@ export async function syncAllUsers() {
     console.log(`Syncing for user: ${profile.email}`)
     let allNewEvents: Omit<CalendarEvent, 'id' | 'created_at'>[] = []
 
+<<<<<<< HEAD
     // 1. Googleカレンダー同期
     if (profile.is_google_sync_enabled && profile.google_refresh_token) {
       try {
@@ -34,6 +35,13 @@ export async function syncAllUsers() {
       } catch (err) {
         console.error(`Google sync failed for user ${profile.id}:`, err)
       }
+=======
+    // 1. Googleカレンダー同期 (スケルトン)
+    if (profile.is_google_sync_enabled) {
+      console.log('Google sync started (skeleton)...')
+      const googleEvents = await fetchGoogleEvents(profile.id)
+      allNewEvents.push(...googleEvents)
+>>>>>>> 91cc6ec (refactor: separate sync process into a standalone worker architecture)
     }
 
     // 2. フリカレスクレイピング
