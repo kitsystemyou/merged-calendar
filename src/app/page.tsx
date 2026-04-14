@@ -62,7 +62,7 @@ export default function CalendarPage() {
     try {
       const response = await fetch('/api/sync', { method: 'POST' })
       if (response.ok) {
-        toast.success('同期が完了いたしましたわ。')
+        toast.success('同期が開始いたしましたわ。')
         fetchEvents()
       } else {
         toast.error('同期に失敗してしまいましたわ。')
